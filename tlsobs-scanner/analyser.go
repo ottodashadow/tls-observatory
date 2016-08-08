@@ -14,7 +14,14 @@ import (
 )
 
 var trustStores []certificate.TrustStore
-var allowedTruststoreNames = []string{certificate.Ubuntu_TS_name, certificate.Mozilla_TS_name, certificate.Microsoft_TS_name, certificate.Apple_TS_name, certificate.Android_TS_name}
+var allowedTruststoreNames = []string{
+	certificate.Ubuntu_TS_name,
+	certificate.Mozilla_TS_name,
+	certificate.Microsoft_TS_name,
+	certificate.Apple_TS_name,
+	certificate.Android_TS_name,
+	certificate.Enterprise_TS_name,
+}
 
 func Setup(c config.Config) {
 	ts := c.TrustStores
@@ -34,6 +41,8 @@ func Setup(c config.Config) {
 			path = ts.AppleTS
 		case certificate.Android_TS_name:
 			path = ts.AndroidTS
+		case certificate.Enterprise_TS_name:
+			path = ts.EnterpriseTS
 		default:
 			log.WithFields(logrus.Fields{
 				"tsname": tsName,

@@ -38,6 +38,7 @@ MKDIR		:= mkdir
 INSTALL		:= install
 
 all: test tlsobs-scanner tlsobs-api tlsobs tlsobs-runner
+all-tlsobs: tlsobs-scanner tlsobs-api tlsobs tlsobs-runner
 
 tlsobs-scanner:
 	echo building TLS Observatory Scanner for $(OS)/$(ARCH)

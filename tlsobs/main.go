@@ -169,7 +169,7 @@ Key      %s %.0fbits %s
 	red := color.New(color.FgRed).SprintFunc()
 	gmark := green("✓")
 	rmark := red("✘")
-	moztrust, microtrust, appletrust, androtrust := rmark, rmark, rmark, rmark
+	moztrust, microtrust, appletrust, androtrust, entertrust := rmark, rmark, rmark, rmark, rmark
 	for truststore, trust := range cert.ValidationInfo {
 		if !trust.IsValid {
 			continue
@@ -183,13 +183,15 @@ Key      %s %.0fbits %s
 			appletrust = gmark
 		case "Android":
 			androtrust = gmark
+		case "Enterprise":
+			entertrust = gmark
 		}
 	}
 	fmt.Printf(`
 --- Trust ---
-Mozilla Microsoft Apple Android
-   %s        %s       %s      %s
-`, moztrust, microtrust, appletrust, androtrust)
+Mozilla Microsoft Apple Android Enterprise
+   %s        %s       %s      %s        %s
+`, moztrust, microtrust, appletrust, androtrust, entertrust)
 
 	// Print chain of trust
 	pathlen := 0

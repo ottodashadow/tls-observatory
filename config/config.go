@@ -20,11 +20,12 @@ type Config struct {
 		MaxProc         int
 	}
 	TrustStores struct {
-		UbuntuTS    string
-		MozillaTS   string
-		MicrosoftTS string
-		AppleTS     string
-		AndroidTS   string
+		UbuntuTS     string
+		MozillaTS    string
+		MicrosoftTS  string
+		AppleTS      string
+		AndroidTS    string
+		EnterpriseTS string
 	}
 }
 

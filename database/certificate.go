@@ -178,6 +178,8 @@ func (db *DB) InsertCACertificatetoDB(cert *certificate.Certificate, tsName stri
 		tsVariable = "in_apple_root_store"
 	case certificate.Android_TS_name:
 		tsVariable = "in_android_root_store"
+	case certificate.Enterprise_TS_name:
+		tsVariable = "in_enterprise_root_store"
 	default:
 		return -1, errors.New(fmt.Sprintf("Cannot insert to DB, %s does not represent a valid truststore name.", tsName))
 	}
@@ -262,6 +264,8 @@ func (db *DB) UpdateCACertTruststore(id int64, tsName string) error {
 		tsVariable = "in_apple_root_store"
 	case certificate.Android_TS_name:
 		tsVariable = "in_android_root_store"
+	case certificate.Enterprise_TS_name:
+		tsVariable = "in_enterprise_root_store"
 	default:
 		return errors.New(fmt.Sprintf("Cannot update DB, %s does not represent a valid truststore name.", tsName))
 	}
@@ -513,10 +517,10 @@ func (db *DB) InsertTrustToDB(cert certificate.Certificate, certID, parID int64)
 
 	var trustID int64
 
-	trusted_ubuntu, trusted_mozilla, trusted_microsoft, trusted_apple, trusted_android := cert.GetBooleanValidity()
+	trusted_ubuntu, trusted_mozilla, trusted_microsoft, trusted_apple, trusted_android, trusted_enterprise := cert.GetBooleanValidity()
 
-	err := db.QueryRow(`INSERT INTO trust(cert_id,issuer_id,timestamp,trusted_ubuntu,trusted_mozilla,trusted_microsoft,trusted_apple,trusted_android,is_current)
- VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`, certID, parID, time.Now(), trusted_ubuntu, trusted_mozilla, trusted_microsoft, trusted_apple, trusted_android, true).Scan(&trustID)
+	err := db.QueryRow(`INSERT INTO trust(cert_id,issuer_id,timestamp,trusted_ubuntu,trusted_mozilla,trusted_microsoft,trusted_apple,trusted_android,trusted_enterprise,is_current)
+ VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`, certID, parID, time.Now(), trusted_ubuntu, trusted_mozilla, trusted_microsoft, trusted_apple, trusted_android, trusted_enterprise, true).Scan(&trustID)
 
 	if err != nil {
 		return -1, err
@@ -528,22 +532,22 @@ func (db *DB) InsertTrustToDB(cert certificate.Certificate, certID, parID int64)
 
 func (db *DB) UpdateTrust(trustID int64, cert certificate.Certificate) (int64, error) {
 
-	var trusted_ubuntu, trusted_mozilla, trusted_microsoft, trusted_apple, trusted_android bool
+	var trusted_ubuntu, trusted_mozilla, trusted_microsoft, trusted_apple, trusted_android, trusted_enterprise bool
 
 	var certID, parID int64
 
-	err := db.QueryRow(`SELECT cert_id, issuer_id, trusted_ubuntu, trusted_mozilla, trusted_microsoft, trusted_apple, trusted_android FROM trust WHERE id=$1 AND is_current=TRUE`,
-		trustID).Scan(&certID, &parID, &trusted_ubuntu, &trusted_mozilla, &trusted_microsoft, &trusted_apple, &trusted_android)
+	err := db.QueryRow(`SELECT cert_id, issuer_id, trusted_ubuntu, trusted_mozilla, trusted_microsoft, trusted_apple, trusted_android, trusted_enterprise FROM trust WHERE id=$1 AND is_current=TRUE`,
+		trustID).Scan(&certID, &parID, &trusted_ubuntu, &trusted_mozilla, &trusted_microsoft, &trusted_apple, &trusted_android, &trusted_enterprise)
 
 	if err != nil {
 		return -1, err
 	}
 
-	new_ubuntu, new_mozilla, new_microsoft, new_apple, new_android := cert.GetBooleanValidity()
+	new_ubuntu, new_mozilla, new_microsoft, new_apple, new_android, new_enterprise := cert.GetBooleanValidity()
 
 	isTrustCurrent := true
 
-	if trusted_ubuntu != new_ubuntu || trusted_mozilla != new_mozilla || trusted_microsoft != new_microsoft || trusted_apple != new_apple || trusted_android != new_android {
+	if trusted_ubuntu != new_ubuntu || trusted_mozilla != new_mozilla || trusted_microsoft != new_microsoft || trusted_apple != new_apple || trusted_android != new_android || trusted_enterprise != new_enterprise {
 		isTrustCurrent = false
 	}
 
@@ -608,8 +612,8 @@ func (db *DB) GetCurrentTrustIDForCert(certID int64) (int64, error) {
 
 func (db *DB) GetValidationMapForCert(certID int64) (map[string]certificate.ValidationInfo, int64, error) {
 	var (
-		ubuntu, mozilla, microsoft, apple, android bool
-		issuerId                                   int64
+		ubuntu, mozilla, microsoft, apple, android, enterprise bool
+		issuerId                                               int64
 	)
 	m := make(map[string]certificate.ValidationInfo)
 	row := db.QueryRow(`SELECT
@@ -618,12 +622,13 @@ func (db *DB) GetValidationMapForCert(certID int64) (map[string]certificate.Vali
 			trusted_microsoft,
 			trusted_apple,
 			trusted_android,
+			trusted_enterprise,
 			issuer_id
 		FROM trust
 		WHERE cert_id=$1 AND is_current=TRUE`,
 		certID)
 
-	err := row.Scan(&ubuntu, &mozilla, &microsoft, &apple, &android, &issuerId)
+	err := row.Scan(&ubuntu, &mozilla, &microsoft, &apple, &android, &enterprise, &issuerId)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return m, 0, nil
@@ -632,7 +637,7 @@ func (db *DB) GetValidationMapForCert(certID int64) (map[string]certificate.Vali
 		}
 	}
 
-	return certificate.GetValidityMap(ubuntu, mozilla, microsoft, apple, android), issuerId, nil
+	return certificate.GetValidityMap(ubuntu, mozilla, microsoft, apple, android, enterprise), issuerId, nil
 }
 
 // IsTrustValid returns the validity of the trust relationship for the given id.
@@ -643,7 +648,8 @@ func (db *DB) IsTrustValid(id int64) (bool, error) {
 				   trusted_mozilla OR
 				   trusted_microsoft OR
 				   trusted_apple OR
-				   trusted_android
+				   trusted_android OR
+				   trusted_enterprise
 			    FROM trust WHERE id=$1`, id)
 	isValid := false
 	err := row.Scan(&isValid)

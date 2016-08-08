@@ -20,6 +20,7 @@ const Mozilla_TS_name = "Mozilla"
 const Microsoft_TS_name = "Microsoft"
 const Apple_TS_name = "Apple"
 const Android_TS_name = "Android"
+const Enterprise_TS_name = "Enterprise"
 
 type Certificate struct {
 	ID                     int64                     `json:"id"`
@@ -124,16 +125,17 @@ type ValidationInfo struct {
 }
 
 type Trust struct {
-	ID               int64
-	CertID           int64
-	IssuerID         int64
-	Timestamp        time.Time
-	TrustUbuntu      bool
-	TrustMozilla     bool
-	TrustedMicrosoft bool
-	TrustedApple     bool
-	TrustedAndroid   bool
-	Current          bool
+	ID                int64
+	CertID            int64
+	IssuerID          int64
+	Timestamp         time.Time
+	TrustUbuntu       bool
+	TrustMozilla      bool
+	TrustedMicrosoft  bool
+	TrustedApple      bool
+	TrustedAndroid    bool
+	TrustedEnterprise bool
+	Current           bool
 }
 
 var SignatureAlgorithm = [...]string{
@@ -206,7 +208,7 @@ func SHA1Hash(data []byte) string {
 }
 
 //GetBooleanValidity converts the validation info map to DB booleans
-func (c Certificate) GetBooleanValidity() (trusted_ubuntu, trusted_mozilla, trusted_microsoft, trusted_apple, trusted_android bool) {
+func (c Certificate) GetBooleanValidity() (trusted_ubuntu, trusted_mozilla, trusted_microsoft, trusted_apple, trusted_android, trusted_enterprise bool) {
 
 	//check Ubuntu validation info
 	valInfo, ok := c.ValidationInfo[Ubuntu_TS_name]
@@ -252,17 +254,27 @@ func (c Certificate) GetBooleanValidity() (trusted_ubuntu, trusted_mozilla, trus
 	} else {
 		trusted_android = valInfo.IsValid
 	}
+
+	//check Enterprise validation info
+	valInfo, ok = c.ValidationInfo[Enterprise_TS_name]
+
+	if !ok {
+		trusted_enterprise = false
+	} else {
+		trusted_enterprise = valInfo.IsValid
+	}
 	return
 }
 
 // GetValidityMap converts boolean validity variables to a validity map.
-func GetValidityMap(trusted_ubuntu, trusted_mozilla, trusted_microsoft, trusted_apple, trusted_android bool) map[string]ValidationInfo {
+func GetValidityMap(trusted_ubuntu, trusted_mozilla, trusted_microsoft, trusted_apple, trusted_android, trusted_enterprise bool) map[string]ValidationInfo {
 
 	vUbuntu := ValidationInfo{IsValid: trusted_ubuntu}
 	vMozilla := ValidationInfo{IsValid: trusted_mozilla}
 	vMicrosoft := ValidationInfo{IsValid: trusted_microsoft}
 	vApple := ValidationInfo{IsValid: trusted_apple}
 	vAndroid := ValidationInfo{IsValid: trusted_android}
+	vEnterprise := ValidationInfo{IsValid: trusted_enterprise}
 
 	m := make(map[string]ValidationInfo)
 
@@ -271,6 +283,7 @@ func GetValidityMap(trusted_ubuntu, trusted_mozilla, trusted_microsoft, trusted_
 	m[Microsoft_TS_name] = vMicrosoft
 	m[Apple_TS_name] = vApple
 	m[Android_TS_name] = vAndroid
+	m[Enterprise_TS_name] = vEnterprise
 
 	return m
 

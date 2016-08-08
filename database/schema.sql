@@ -31,6 +31,7 @@ CREATE TABLE certificates(
 	in_microsoft_root_store	    bool NULL,
 	in_apple_root_store			bool NULL,
 	in_android_root_store	    bool NULL,
+    in_enterprise_root_store	bool NULL,
 	is_revoked			        bool NULL,
 	revoked_at			        timestamp NULL,
 	raw_cert					varchar NOT NULL
@@ -47,6 +48,7 @@ CREATE TABLE trust (
 	trusted_microsoft		    bool NULL,
 	trusted_apple		        bool NULL,
 	trusted_android			    bool NULL,
+	trusted_enterprise		    bool NULL,
 	is_current				    bool NOT NULL
 );
 CREATE INDEX trust_cert_id_idx ON trust(cert_id);
